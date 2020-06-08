@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace ShortestOpenPath_Algorithm
@@ -15,12 +13,27 @@ namespace ShortestOpenPath_Algorithm
         {
             public int treeID;
             public List<double> coordinates;
-            public List<Tree> neighbours;
 
             public Tree()
             {
                 coordinates = new List<double>();
-                neighbours = new List<Tree>();
+            }
+        }
+
+        [Serializable]
+        public class Edge
+        {
+            public List<Tree> points;
+            public List<int> indexes;
+            public Edge(Tree a, Tree b)
+            {
+                points = new List<Tree> { a, b };
+                indexes = new List<int> { a.treeID, b.treeID };
+            }
+
+            public override string ToString()
+            {
+                return "Indexes: { " + indexes[0] + " , " + indexes[1] + " }";
             }
         }
 
@@ -30,7 +43,7 @@ namespace ShortestOpenPath_Algorithm
         private Transform connectionRoot;
 
         [SerializeField]
-        private List<GameObject> forest;
+        private List<GameObject> forest_;
         [SerializeField]
         private List<Tree> trees;
         [SerializeField]
@@ -40,6 +53,8 @@ namespace ShortestOpenPath_Algorithm
         private GameObject treePrefab;
         [SerializeField]
         private GameObject connectionPrefab;
+        [SerializeField]
+        private List<Edge> edges;
 
         private bool initStep;
         private List<int> visitedIds;
@@ -47,7 +62,7 @@ namespace ShortestOpenPath_Algorithm
 
         private void Start()
         {
-            forest = new List<GameObject>();
+            forest_ = new List<GameObject>();
             visitedIds = new List<int>();
             colors = new List<int>();
         }
@@ -60,46 +75,27 @@ namespace ShortestOpenPath_Algorithm
             SpawnTrees(trees);
 
             // setting connection with nearest neighbour
-            for (int i = 0; i < forest.Count; i++)
-                SetNearestNeighbour(trees[i], trees, i);
+            /* for (int i = 0; i < forest_.Count; i++)
+                 SetNearestNeighbour(trees[i], trees);*/
 
-            /*
-            List<Tree> nonConnected = new List<Tree>();
-            for (int i = 0; i < forest.Count; i++)
-                if (trees[i].neighbours.Count == 0)
-                    nonConnected.Add(trees[i]);
-            Debug.Log("NonConnected: " + nonConnected.Count);
+            SetNearestNeighbour(trees[0], trees);
 
-            for (int i = 0; i < nonConnected.Count; i++)
-                SetNearestNeighbour(nonConnected[i], trees, i);
-            */
-
-            for (int i = 0; i < forest.Count; i++)
-                SetNearestNeighbour(trees[i], trees, i);
-
-            for (int i = 0; i < trees.Count; i++)
-            {
-                print("***");
-                print("Current: "+(i+1));
-                //DoDfs(trees, trees[i]);
-            }
+            /*for (int i = 0; i < forest.Count; i++)
+                SetNearestNeighbour(trees[i], trees, i);*/
 
             // draw set connections
-            for (int i = 0; i < trees.Count; i++)
+            /*for (int i = 0; i < edges.Count; i++)
             {
-                for (int j = 0; j < trees[i].neighbours.Count; j++)
-                {
-                    GameObject connection = Instantiate(connectionPrefab, connectionRoot);
-                    connection.GetComponent<LineRenderer>().positionCount = 2;
+                GameObject connection = Instantiate(connectionPrefab, connectionRoot);
+                connection.GetComponent<LineRenderer>().positionCount = 2;
 
-                    if (trees[i].treeID == trees[i].neighbours[j].treeID)
-                        continue;
+                if (edges[i].points[0].treeID == edges[i].points[1].treeID)
+                    continue;
 
-                    connection.GetComponent<LineRenderer>().SetPosition(0, forest[trees[i].treeID].transform.position);
-                    connection.GetComponent<LineRenderer>().SetPosition(1, forest[trees[i].neighbours[j].treeID].transform.position);
-                    connectionRenderers.Add(connection);
-                }
-            }
+                connection.GetComponent<LineRenderer>().SetPosition(0, forest[edges[i].points[0].treeID].transform.position);
+                connection.GetComponent<LineRenderer>().SetPosition(1, forest[edges[i].points[1].treeID].transform.position);
+                connectionRenderers.Add(connection);
+            }*/
         }
 
         private void SpawnTrees(List<Tree> _forest)
@@ -109,7 +105,7 @@ namespace ShortestOpenPath_Algorithm
                 _forest[i].treeID = i;
                 GameObject _tree = Instantiate(treePrefab, treeRoot);
                 _tree.transform.localPosition = new Vector3((float)_forest[i].coordinates[0] * 0.1f, (float)_forest[i].coordinates[1] * 0.1f);
-                forest.Add(_tree);
+                forest_.Add(_tree);
             }
         }
 
@@ -156,20 +152,21 @@ namespace ShortestOpenPath_Algorithm
                     tokens.Add(token);
                 }
             }
-            Debug.Log("Tokens: " + tokens.Count);
             return tokens;
         }
 
-        public void SetNearestNeighbour(Tree currentTree, List<Tree> forest, int curTreeId)
+        public void SetNearestNeighbour(Tree currentTree, List<Tree> forest)
         {
+            print("===========================");
             int nearestTreeId = -1;
             double minDistance = -1;
             List<double> distance = new List<double>();
             for (int i = 0; i < forest.Count; i++)
             {
-                if (i == curTreeId)
+                print("i: " + i);
+                if (i == currentTree.treeID)
                 {
-                    distance.Add(0);
+                    //distance.Add(0);
                     continue;
                 }
 
@@ -182,24 +179,52 @@ namespace ShortestOpenPath_Algorithm
                 if (minDistance == -1)
                     minDistance = sum;
                 bool isConnected = false;
-                foreach (var item in currentTree.neighbours)
-                    if (item.treeID == i) {
+                foreach (var item in edges)
+                {
+                    Debug.Log(item + " | curr: " + currentTree.treeID + " | i: " + i);
+                    if (item.indexes.Contains(i) && item.indexes.Contains(currentTree.treeID))
+                    {
+                        //Debug.Log(item + " | curr: " + currentTree.treeID + " | i: " + i);
+                        print("Connected with: " + i);
                         isConnected = true;
                         break;
-                    } else continue;
-                bool doSave = minDistance > sum && !isConnected;
+                    }
+                    continue;
+                }
 
+                bool doSave = minDistance > sum && !isConnected;
+                print("i: " + i + " | minDist: " + minDistance + " | sum: " + sum);
                 nearestTreeId = doSave ? i : nearestTreeId;
                 minDistance = doSave ? sum : minDistance;
             }
 
             if (nearestTreeId == -1 || minDistance == -1)
-                nearestTreeId = currentTree.treeID;
+            {
+                print(currentTree.treeID);
+                print(nearestTreeId);
+                print(minDistance);
+                print("------------------");
+                return;
+            }
 
-            currentTree.neighbours.Add(forest[nearestTreeId]);
-            forest[nearestTreeId].neighbours.Add(currentTree);
+            Edge edge = new Edge(currentTree, forest[nearestTreeId]);
+            edges.Add(edge);
+
+            // draw edge
+            if (edge.points[0].treeID == edge.points[1].treeID)
+                return;
+
+            GameObject connection = Instantiate(connectionPrefab, connectionRoot);
+            connection.GetComponent<LineRenderer>().positionCount = 2;
+            connection.GetComponent<LineRenderer>().SetPosition(0, forest_[edge.points[0].treeID].transform.position);
+            connection.GetComponent<LineRenderer>().SetPosition(1, forest_[edge.points[1].treeID].transform.position);
+            connectionRenderers.Add(connection);
+
+
+            SetNearestNeighbour(trees[nearestTreeId], trees);
         }
 
+        /*
         private void RemoveCycle(Tree currentTree)
         {
             print("Started");
@@ -227,53 +252,6 @@ namespace ShortestOpenPath_Algorithm
             //foreach (var neighbour in currentTree.neighbours)
                 //RemoveCycle(neighbour);
         }
-
-
-        private int prevId, curId;
-        private List<Tuple<int, int>> remove = new List<Tuple<int, int>>();
-
-        private void DoDfs(List<Tree> forest, Tree tree)
-        {
-            colors.Clear();
-            remove.Clear();
-
-            foreach (var item in forest)
-                colors.Add(0); // white
-
-            Dfs(tree);
-
-            print("Pairs: " + remove.Count);
-            foreach (var item in remove)
-            {
-                foreach (var treeItem in trees[item.Item1].neighbours)
-                {
-                    if (treeItem.treeID != item.Item2)
-                        continue;
-                    trees[item.Item1].neighbours.Remove(treeItem);
-                    break;
-                }
-            }
-        }
-
-        private void Dfs(Tree tree)
-        {
-            colors[tree.treeID] = 1; // grey
-            prevId = tree.treeID;
-
-            foreach (var item in tree.neighbours)
-            {
-                curId = -1;
-                if (colors[item.treeID] == 0) // if white
-                    Dfs(item);
-                else if (colors[item.treeID] == 1) // if grey
-                {
-                    curId = item.treeID;
-                    if(prevId != curId)
-                        remove.Add(new Tuple<int, int>(prevId, curId));
-                    return;
-                }
-            }
-            colors[tree.treeID] = 2; // black
-        }
+        */
     }
 }
