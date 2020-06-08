@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using UnityEditor.iOS.Xcode;
 using UnityEngine;
 
 namespace ShortestOpenPath_Algorithm
@@ -56,8 +57,11 @@ namespace ShortestOpenPath_Algorithm
         [SerializeField]
         private List<Edge> edges;
 
+        private bool isCycle;
+
         private void Start()
         {
+            isCycle = false;
             drawForest = new List<GameObject>();
         }
 
@@ -70,12 +74,17 @@ namespace ShortestOpenPath_Algorithm
 
             // setting connection with nearest neighbour
             for (int i = 0; i < drawForest.Count; i++)
-                 SetNearestNeighbour(trees[i], trees);
+                SetNearestNeighbour(trees[i], trees);
+            print("Edges: " + edges.Count);
 
+            for (int i = 0; i < trees.Count; i++)
+                DoConnection(trees[i].treeID);
+            print("Edges: " + edges.Count);
             DrawEdges();
         }
 
-        private void DrawEdges() {
+        private void DrawEdges()
+        {
             for (int i = 0; i < edges.Count; i++)
             {
                 if (edges[i].points[0].treeID == edges[i].points[1].treeID)
@@ -151,73 +160,122 @@ namespace ShortestOpenPath_Algorithm
             int nearestTreeId = -1;
             double minDistance = -1;
             List<double> distance = new List<double>();
-            for (int i = 0; i < forest.Count; i++)
+            foreach (var item in forest)
             {
-                if (i == currentTree.treeID)
-                {
-                    //distance.Add(0);
+                if (item.treeID == currentTree.treeID)
                     continue;
-                }
 
                 double sum = 0;
-                for (int j = 0; j < forest[i].coordinates.Count; j++)
-                    sum += Math.Pow(forest[i].coordinates[j] - currentTree.coordinates[j], 2);
+                for (int j = 0; j < trees[item.treeID].coordinates.Count; j++)
+                    sum += Math.Pow(trees[item.treeID].coordinates[j] - currentTree.coordinates[j], 2);
 
                 distance.Add(Math.Sqrt(sum));
 
                 if (minDistance == -1)
                 {
                     minDistance = sum;
-                    nearestTreeId = i;
+                    nearestTreeId = item.treeID;
                 }
 
                 bool doSave = minDistance > sum;
-                nearestTreeId = doSave ? i : nearestTreeId;
+                nearestTreeId = doSave ? item.treeID : nearestTreeId;
                 minDistance = doSave ? sum : minDistance;
             }
 
             foreach (var item in edges)
             {
                 if (item.indexes.Contains(nearestTreeId) && item.indexes.Contains(currentTree.treeID))
+                {
                     return;
+                }
                 continue;
             }
 
             if (nearestTreeId == -1 || minDistance == -1)
                 return;
-
-            Edge edge = new Edge(currentTree, forest[nearestTreeId]);
-            edges.Add(edge);
-        }
-
-        /*
-        private void RemoveCycle(Tree currentTree)
-        {
-            print("Started");
-            // if no neighbours - return
-            if (currentTree.neighbours.Count == 0)
+            if (currentTree.treeID == trees[nearestTreeId].treeID)
                 return;
-            visitedIds.Add(currentTree.treeID);
 
-            foreach (var neighbour in currentTree.neighbours)
-            {
-                foreach (var item in neighbour.neighbours)
-                {
-                    if (item.treeID == currentTree.treeID)
-                        continue;
-                    if (visitedIds.Contains(item.treeID))
-                    {
-                        print("cycle found: " + currentTree.treeID + " - " + neighbour.treeID + " - " + item.treeID);
-                        //neighbour.neighbours.Remove(item);
-                        break;
-                    }
-                    //else RemoveCycle(item);
-                }
-            }
-            //visitedIds.Add(currentTree.treeID);
-            //foreach (var neighbour in currentTree.neighbours)
-                //RemoveCycle(neighbour);
+            Edge edge = new Edge(currentTree, trees[nearestTreeId]);
+            edges.Add(edge);
+
+            // cycle check
+            RemoveCycle(edge);
         }
-        */
+
+        private void DoConnection(int treeIndex)
+        {
+            List<Tree> disconnected = new List<Tree>();
+            List<Edge> connected = new List<Edge>(edges);
+
+            disconnected.Clear();
+            for (int j = 0; j < trees.Count; j++)
+            {
+                if (treeIndex == j)
+                    continue;
+
+                bool isExists = false;
+                foreach (var item in edges)
+                {
+                    if (item.indexes.Contains(trees[treeIndex].treeID) && item.indexes.Contains(trees[j].treeID))
+                        isExists = true;
+                }
+                if (!isExists)
+                    disconnected.Add(trees[j]);
+            }
+
+            if (disconnected.Count == 0)
+                return;
+            SetNearestNeighbour(trees[treeIndex], disconnected);
+        }
+
+        private void RemoveCycle(Edge current)
+        {
+            List<Edge> visited = new List<Edge> { current };
+            List<Edge> neighbours = GetNeighbours(current.indexes[0]);
+
+            // if no neighbours - return
+            if (neighbours.Count == 0)
+                return;
+
+            foreach (var item in neighbours)
+                DoEdgeTransition(current.indexes[0], item, visited);
+        }
+
+        private void DoEdgeTransition(int rootId, Edge current, List<Edge> visited)
+        {
+            if (isCycle)
+                return;
+
+            int nextRoot = current.indexes[0] == rootId ? current.indexes[1] : current.indexes[0];
+            List<Edge> neighbours = GetNeighbours(nextRoot);
+
+            // if no neighbours - return
+            if (neighbours.Count == 0)
+                return;
+            foreach (var item in neighbours)
+            {
+                if (!visited.Contains(item))
+                    continue;
+                print("Cycle found");
+                isCycle = true;
+                return;
+            }
+
+            visited.Add(current);
+            foreach (var item in neighbours)
+                DoEdgeTransition(nextRoot, item, visited);
+        }
+
+        private List<Edge> GetNeighbours(int root)
+        {
+            List<Edge> neighbours = new List<Edge>();
+            foreach (var item in edges)
+            {
+                if (item.indexes.Contains(root))
+                    neighbours.Add(item);
+            }
+            return neighbours;
+        }
     }
 }
