@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor.iOS.Xcode;
@@ -77,11 +78,19 @@ namespace ShortestOpenPath_Algorithm
                 SetNearestNeighbour(trees[i], trees);
             print("Edges: " + edges.Count);
 
+            List<Edge> connected = new List<Edge>(edges);
             //for (int i = 0; i < trees.Count; i++)
-            //    DoConnection(trees[i].treeID);
-            DoConnection(trees[5].treeID);
-            DoConnection(trees[0].treeID);
-            print("Edges: " + edges.Count);
+            /*for (int i = 0; i < trees.Count; i++)
+                DoConnection(trees[i].treeID, connected);*/
+            /*DoConnection(trees[0].treeID);
+            DoConnection(trees[5].treeID);*/
+            DoConnection(trees[6].treeID, connected);
+            print("### Edges::"+ edges.Count);
+            DoConnection(trees[9].treeID, connected);
+            print("### Edges::" + edges.Count);
+            //DoConnection(trees[9].treeID, connected);
+            //DoConnection(trees[0].treeID);
+            //print("Edges: " + edges.Count);
             DrawEdges();
         }
 
@@ -205,10 +214,9 @@ namespace ShortestOpenPath_Algorithm
             RemoveCycle(edge);
         }
 
-        private void DoConnection(int treeIndex)
+        private void DoConnection(int treeIndex, List<Edge> connected)
         {
             List<Tree> disconnected = new List<Tree>();
-            List<Edge> connected = new List<Edge>(edges);
 
             disconnected.Clear();
             for (int j = 0; j < trees.Count; j++)
@@ -217,7 +225,7 @@ namespace ShortestOpenPath_Algorithm
                     continue;
 
                 bool isExists = false;
-                foreach (var item in edges)
+                foreach (var item in connected)
                 {
                     if (item.indexes.Contains(trees[treeIndex].treeID) && item.indexes.Contains(trees[j].treeID))
                         isExists = true;
@@ -236,22 +244,18 @@ namespace ShortestOpenPath_Algorithm
             print("**************************\nCurrent: " + current);
             List<Edge> visited = new List<Edge> { current };
             List<Edge> neighbours = GetNeighbours(current.indexes[0], visited);
+            neighbours.Remove(current);
 
-            foreach (var item in visited)
-                if (neighbours.Contains(item))
-                    neighbours.Remove(item);
             // if no neighbours - return
             if (neighbours.Count == 0)
                 return;
 
             print("RemoveCycle::neighbours count: " + neighbours.Count);
             foreach (var item in neighbours)
-            {
                 print(item);
-                DoEdgeTransition(current.indexes[0], item, visited);
-            }
 
-            
+            foreach (var item in neighbours)
+                DoEdgeTransition(current.indexes[0], item, visited);
         }
 
         private void DoEdgeTransition(int rootId, Edge current, List<Edge> visited)
@@ -261,21 +265,25 @@ namespace ShortestOpenPath_Algorithm
             visited.Add(current);
             print("Visited::count: " + visited.Count);
             foreach (var item in visited)
-            {
                 print(item);
-            }
-
 
             int nextRoot = current.indexes[0] == rootId ? current.indexes[1] : current.indexes[0];
             print("Next root: " + nextRoot);
             List<Edge> neighbours = GetNeighbours(nextRoot, visited);
             neighbours.Remove(current);
-            
+
             // if no neighbours - return
             if (neighbours.Count == 0)
+            {
+                print("No other neighbours for tree #" + nextRoot);
+                visited.Remove(current);
                 return;
+            }
 
             print("DoEdgeTransition::Neighbours count: " + neighbours.Count);
+            foreach (var item in neighbours)
+                print(item);
+
             foreach (var item in neighbours)
             {
                 if (!visited.Contains(item))
@@ -329,7 +337,9 @@ namespace ShortestOpenPath_Algorithm
                 maxDist = doSave ? distances[i] : maxDist;
                 maxDistIndex = doSave ? i : maxDistIndex;
             }
-            edges.Remove(list[maxDistIndex]);
+
+            //edges.Remove(list[maxDistIndex]);
+            print("## Remove:: " + list[maxDistIndex]);
         }
     }
 }
