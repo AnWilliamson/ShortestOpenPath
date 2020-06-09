@@ -521,6 +521,7 @@ MonoBehaviour:
   connectionPrefab: {fileID: 1679091895098124091, guid: 623fe96ead18bea459777d3d3c97c418,
     type: 3}
   edges: []
+  k: 1
 --- !u!4 &839453358 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1679091895098124088, guid: 623fe96ead18bea459777d3d3c97c418,
