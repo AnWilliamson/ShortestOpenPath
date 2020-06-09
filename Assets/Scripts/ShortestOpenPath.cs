@@ -77,8 +77,10 @@ namespace ShortestOpenPath_Algorithm
                 SetNearestNeighbour(trees[i], trees);
             print("Edges: " + edges.Count);
 
-            for (int i = 0; i < trees.Count; i++)
-                DoConnection(trees[i].treeID);
+            //for (int i = 0; i < trees.Count; i++)
+            //    DoConnection(trees[i].treeID);
+            DoConnection(trees[5].treeID);
+            DoConnection(trees[0].treeID);
             print("Edges: " + edges.Count);
             DrawEdges();
         }
@@ -231,43 +233,72 @@ namespace ShortestOpenPath_Algorithm
 
         private void RemoveCycle(Edge current)
         {
+            print("**************************\nCurrent: " + current);
             List<Edge> visited = new List<Edge> { current };
-            List<Edge> neighbours = GetNeighbours(current.indexes[0]);
+            List<Edge> neighbours = GetNeighbours(current.indexes[0], visited);
 
+            foreach (var item in visited)
+                if (neighbours.Contains(item))
+                    neighbours.Remove(item);
             // if no neighbours - return
             if (neighbours.Count == 0)
                 return;
 
+            print("RemoveCycle::neighbours count: " + neighbours.Count);
             foreach (var item in neighbours)
+            {
+                print(item);
                 DoEdgeTransition(current.indexes[0], item, visited);
+            }
+
+            
         }
 
         private void DoEdgeTransition(int rootId, Edge current, List<Edge> visited)
         {
             if (isCycle)
                 return;
+            visited.Add(current);
+            print("Visited::count: " + visited.Count);
+            foreach (var item in visited)
+            {
+                print(item);
+            }
+
 
             int nextRoot = current.indexes[0] == rootId ? current.indexes[1] : current.indexes[0];
-            List<Edge> neighbours = GetNeighbours(nextRoot);
-
+            print("Next root: " + nextRoot);
+            List<Edge> neighbours = GetNeighbours(nextRoot, visited);
+            neighbours.Remove(current);
+            
             // if no neighbours - return
             if (neighbours.Count == 0)
                 return;
+
+            print("DoEdgeTransition::Neighbours count: " + neighbours.Count);
             foreach (var item in neighbours)
             {
                 if (!visited.Contains(item))
                     continue;
-                print("Cycle found");
+
+                print("Cycle found:: "+item);
                 isCycle = true;
+                string edges = "";
+                foreach (var itemEdge in visited)
+                    edges += " | " + itemEdge;
+                print(edges);
+
+                RemoveLongestEdge(visited);
                 return;
             }
 
-            visited.Add(current);
             foreach (var item in neighbours)
+            {
                 DoEdgeTransition(nextRoot, item, visited);
+            }
         }
 
-        private List<Edge> GetNeighbours(int root)
+        private List<Edge> GetNeighbours(int root, List<Edge> visited)
         {
             List<Edge> neighbours = new List<Edge>();
             foreach (var item in edges)
@@ -275,7 +306,30 @@ namespace ShortestOpenPath_Algorithm
                 if (item.indexes.Contains(root))
                     neighbours.Add(item);
             }
+
             return neighbours;
+        }
+
+        private void RemoveLongestEdge(List<Edge> list)
+        {
+            List<double> distances = new List<double>();
+            foreach (var item in list)
+            {
+                double sum = 0;
+                for (int j = 0; j < item.points[0].coordinates.Count; j++)
+                    sum += Math.Pow(item.points[1].coordinates[j] - item.points[0].coordinates[j], 2);
+                distances.Add(Math.Sqrt(sum));
+            }
+
+            double maxDist = distances[0];
+            int maxDistIndex = 0;
+            for (int i = 0; i < distances.Count; i++)
+            {
+                bool doSave = maxDist < distances[i];
+                maxDist = doSave ? distances[i] : maxDist;
+                maxDistIndex = doSave ? i : maxDistIndex;
+            }
+            edges.Remove(list[maxDistIndex]);
         }
     }
 }

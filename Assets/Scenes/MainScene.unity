@@ -514,12 +514,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   treeRoot: {fileID: 871114133}
   connectionRoot: {fileID: 1105207084}
-  forest: []
+  drawForest: []
   trees: []
   connectionRenderers: []
   treePrefab: {fileID: 1177435706978216, guid: c6c99d92d297bab479e4f7a471d64929, type: 3}
   connectionPrefab: {fileID: 1679091895098124091, guid: 623fe96ead18bea459777d3d3c97c418,
     type: 3}
+  edges: []
 --- !u!4 &839453358 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1679091895098124088, guid: 623fe96ead18bea459777d3d3c97c418,
@@ -1001,6 +1002,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1679091895098124089, guid: 623fe96ead18bea459777d3d3c97c418,
+        type: 3}
+      propertyPath: m_Parameters.widthMultiplier
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 623fe96ead18bea459777d3d3c97c418, type: 3}
