@@ -80,24 +80,29 @@ namespace ShortestOpenPath_Algorithm
             SpawnTrees(trees);
 
             // setting connection with nearest neighbour
-            for (int i = 0; i < drawForest.Count; i++)
+            for (int i = 0; i < trees.Count; i++)
                 SetNearestNeighbour(trees[i], trees);
+            print("Trees: " + trees.Count);
+            print("=========");
+
 
             // connects losted
+            //while (edges.Count < trees.Count)
+            print("Edges: " + edges.Count);
             List<Edge> connected = new List<Edge>(edges);
-            for (int i = 0; i < trees.Count; i++)
+            for (int i = 0; i < trees.Count/2; i++)
                 DoConnection(trees[i].treeID, connected);
 
             // do cuts
-            if(k < 2)
+            /*if (k < 2)
                 print("To small value K.");
-            else if(k > trees.Count - 1)
+            else if (k > trees.Count - 1)
             {
                 k = trees.Count - 1;
             }
 
             for (int i = 1; i < k; i++)
-                RemoveLongestEdge(edges);
+                RemoveLongestEdge(edges);*/
 
             DrawEdges();
         }
@@ -225,7 +230,6 @@ namespace ShortestOpenPath_Algorithm
         private void DoConnection(int treeIndex, List<Edge> connected)
         {
             isCycle = false;
-            //print("### Connected Edges::" + connected.Count);
             List<Tree> disconnected = new List<Tree>();
 
             disconnected.Clear();
@@ -263,9 +267,9 @@ namespace ShortestOpenPath_Algorithm
                 return;
             }
 
-            //print("RemoveCycle::neighbours count: " + neighbours.Count);
-            //foreach (var item in neighbours)
-                //print(item);
+            /*print("RemoveCycle::neighbours count: " + neighbours.Count);
+            foreach (var item in neighbours)
+                print(item);*/
 
             foreach (var item in neighbours)
                 DoEdgeTransition(current.indexes[0], item, visited);
@@ -276,11 +280,13 @@ namespace ShortestOpenPath_Algorithm
         {
             if (isCycle)
                 return;
-            visited.Add(current);
-            //print("Visited::count: " + visited.Count);
-            //foreach (var item in visited)
-            ///    print(item);
 
+            visited.Add(current);
+            /*print("Visited::count: " + visited.Count);
+            foreach (var item in visited)
+                print(item);*/
+
+            // detect the other side of edge for seaching next heighbours
             int nextRoot = current.indexes[0] == rootId ? current.indexes[1] : current.indexes[0];
             //print("Next root: " + nextRoot);
             List<Edge> neighbours = GetNeighbours(nextRoot, visited);
@@ -294,30 +300,41 @@ namespace ShortestOpenPath_Algorithm
                 return;
             }
 
-            //print("DoEdgeTransition::Neighbours count: " + neighbours.Count);
-            //foreach (var item in neighbours)
-                //print(item);
+            /*print("DoEdgeTransition::Neighbours count: " + neighbours.Count);
+            foreach (var item in neighbours)
+                print(item);*/
 
             foreach (var item in neighbours)
             {
+                // if we find neighbour in visited list -
+                // we reached the tail, i.e. got a cycle,
+                // otherwise - skip neighbour.
                 if (!visited.Contains(item))
                     continue;
 
-                //print("Cycle found:: "+item);
+                //print("Cycle found:: " + item);
                 isCycle = true;
-                string edges = "";
+                /*string edges = "";
                 foreach (var itemEdge in visited)
                     edges += " | " + itemEdge;
-                //print(edges);
+                print(edges);*/
 
+                // removing the longest edge in cycle
+                // and finish search
                 RemoveLongestEdge(visited);
                 return;
             }
 
+            // no one neighbour creates a cycle, so
+            // go further and try to get cycle in neighbours
+            // of each current neighbour
             foreach (var item in neighbours)
-            {
                 DoEdgeTransition(nextRoot, item, visited);
-            }
+
+            // if no one path from neighbours creates cycle 
+            // - remove current edge and return to previous
+            // for checking its` last neighbours
+            visited.Remove(current);
         }
 
         private List<Edge> GetNeighbours(int root, List<Edge> visited)
