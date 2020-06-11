@@ -57,7 +57,9 @@ namespace ShortestOpenPath_Algorithm
         [SerializeField]
         private GameObject connectionPrefab;
         [SerializeField]
-        private List<Edge> edges;
+        private List<Edge> builtEdges;
+        [SerializeField]
+        private List<Edge> projectedEdges;
 
         // How much klusters we will\n get after K-1 cuts (min: 2)
         [Header("Clusters: ")]
@@ -82,22 +84,23 @@ namespace ShortestOpenPath_Algorithm
             // setting connection with nearest neighbour
             for (int i = 0; i < trees.Count; i++)
                 SetNearestNeighbour(trees[i], trees);
-            print("Trees: " + trees.Count);
+            /*print("Edges: " + builtEdges.Count + " | Trees: " + trees.Count);
             print("=========");
             print("=========");
-            print("=========");
-
+            print("=========");*/
 
             // connects losted
-            //while (edges.Count < trees.Count)
-            print("Edges: " + edges.Count);
-            List<Edge> connected = new List<Edge>(edges);
-            for (int i = 0; i < trees.Count; i++)
-                DoConnection(trees[i].treeID, connected);
-            print("Edges: " + edges.Count);
+            while (builtEdges.Count < trees.Count-1)
+            //for (int q = 0; q < 3; q++)
+            {
+                List<Edge> connected = new List<Edge>(projectedEdges);
+                for (int i = 0; i < trees.Count; i++)
+                    DoConnection(trees[i].treeID, connected);
+                //print("Edges: " + builtEdges.Count + " | Trees: " + trees.Count);
+            }
 
             // do cuts
-            /*if (k < 2)
+            if (k < 2)
                 print("To small value K.");
             else if (k > trees.Count - 1)
             {
@@ -105,22 +108,22 @@ namespace ShortestOpenPath_Algorithm
             }
 
             for (int i = 1; i < k; i++)
-                RemoveLongestEdge(edges);*/
+                RemoveLongestEdge(builtEdges);
 
             DrawEdges();
         }
 
         private void DrawEdges()
         {
-            for (int i = 0; i < edges.Count; i++)
+            for (int i = 0; i < builtEdges.Count; i++)
             {
-                if (edges[i].points[0].treeID == edges[i].points[1].treeID)
+                if (builtEdges[i].points[0].treeID == builtEdges[i].points[1].treeID)
                     continue;
 
                 GameObject connection = Instantiate(connectionPrefab, connectionRoot);
                 connection.GetComponent<LineRenderer>().positionCount = 2;
-                connection.GetComponent<LineRenderer>().SetPosition(0, drawForest[edges[i].points[0].treeID].transform.position);
-                connection.GetComponent<LineRenderer>().SetPosition(1, drawForest[edges[i].points[1].treeID].transform.position);
+                connection.GetComponent<LineRenderer>().SetPosition(0, drawForest[builtEdges[i].points[0].treeID].transform.position);
+                connection.GetComponent<LineRenderer>().SetPosition(1, drawForest[builtEdges[i].points[1].treeID].transform.position);
                 connectionRenderers.Add(connection);
             }
         }
@@ -209,7 +212,7 @@ namespace ShortestOpenPath_Algorithm
                 minDistance = doSave ? sum : minDistance;
             }
 
-            foreach (var item in edges)
+            foreach (var item in builtEdges)
             {
                 if (item.indexes.Contains(nearestTreeId) && item.indexes.Contains(currentTree.treeID))
                 {
@@ -224,7 +227,8 @@ namespace ShortestOpenPath_Algorithm
                 return;
 
             Edge edge = new Edge(currentTree, trees[nearestTreeId]);
-            edges.Add(edge);
+            builtEdges.Add(edge);
+            projectedEdges.Add(edge);
 
             // cycle check
             RemoveCycle(edge);
@@ -258,7 +262,7 @@ namespace ShortestOpenPath_Algorithm
 
         private void RemoveCycle(Edge current)
         {
-            print("************ Current **************\t" + current);
+            //print("************ Current **************\t" + current);
             List<Edge> visited = new List<Edge> { current };
             List<Edge> neighbours = GetNeighbours(current.indexes[0], visited);
             neighbours.Remove(current);
@@ -266,17 +270,17 @@ namespace ShortestOpenPath_Algorithm
             // if no neighbours - return
             if (neighbours.Count == 0)
             {
-                print("************ Finished **************[0]\t" + current);
+                //print("************ Finished **************[0]\t" + current);
                 return;
             }
 
-            print("RemoveCycle::neighbours count: " + neighbours.Count);
+            /*print("RemoveCycle::neighbours count: " + neighbours.Count);
             foreach (var item in neighbours)
-                print(item);
+                print(item);*/
 
             foreach (var item in neighbours)
                 DoEdgeTransition(current.indexes[0], item, visited);
-            print("************ Finished **************\t" + current);
+            //print("************ Finished **************\t" + current);
         }
 
         private void DoEdgeTransition(int rootId, Edge current, List<Edge> visited)
@@ -285,27 +289,27 @@ namespace ShortestOpenPath_Algorithm
                 return;
 
             visited.Add(current);
-            print("Visited::count: " + visited.Count);
+            /*print("Visited::count: " + visited.Count);
             foreach (var item in visited)
-                print(item);
+                print(item);*/
 
             // detect the other side of edge for seaching next heighbours
             int nextRoot = current.indexes[0] == rootId ? current.indexes[1] : current.indexes[0];
-            print("Next root: " + nextRoot);
+            //print("Next root: " + nextRoot);
             List<Edge> neighbours = GetNeighbours(nextRoot, visited);
             neighbours.Remove(current);
 
             // if no neighbours - return
             if (neighbours.Count == 0)
             {
-                print("No other neighbours for tree #" + nextRoot);
+                //print("No other neighbours for tree #" + nextRoot);
                 visited.Remove(current);
                 return;
             }
 
-            print("DoEdgeTransition::Neighbours count: " + neighbours.Count);
+            /*print("DoEdgeTransition::Neighbours count: " + neighbours.Count);
             foreach (var item in neighbours)
-                print(item);
+                print(item);*/
 
             foreach (var item in neighbours)
             {
@@ -315,12 +319,12 @@ namespace ShortestOpenPath_Algorithm
                 if (!visited.Contains(item))
                     continue;
 
-                print("Cycle found:: " + item);
+                //print("Cycle found:: " + item);
                 isCycle = true;
-                string edges = "";
+                /*string builtEdges = "";
                 foreach (var itemEdge in visited)
-                    edges += " | " + itemEdge;
-                print(edges);
+                    builtEdges += " | " + itemEdge;
+                print(builtEdges);*/
 
                 // removing the longest edge in cycle
                 // and finish search
@@ -343,7 +347,7 @@ namespace ShortestOpenPath_Algorithm
         private List<Edge> GetNeighbours(int root, List<Edge> visited)
         {
             List<Edge> neighbours = new List<Edge>();
-            foreach (var item in edges)
+            foreach (var item in builtEdges)
             {
                 if (item.indexes.Contains(root))
                     neighbours.Add(item);
@@ -372,7 +376,7 @@ namespace ShortestOpenPath_Algorithm
                 maxDistIndex = doSave ? i : maxDistIndex;
             }
 
-            edges.Remove(list[maxDistIndex]);
+            builtEdges.Remove(list[maxDistIndex]);
             //print("## Remove:: " + list[maxDistIndex]);
         }
     }
