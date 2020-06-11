@@ -75,7 +75,7 @@ namespace ShortestOpenPath_Algorithm
         public void CalculationScenario()
         {
             // read file and save data as separate items
-            trees = ReadCsv_("D:/Programming/MachineLearning/Yefimov/testing_1.csv", true, 1);
+            trees = ReadCsv_(Path.Combine(Application.dataPath, "testing_1.csv"), true, 1);
             // spawn trees in 3d space with 2D coordinates
             SpawnTrees(trees);
 
@@ -84,14 +84,17 @@ namespace ShortestOpenPath_Algorithm
                 SetNearestNeighbour(trees[i], trees);
             print("Trees: " + trees.Count);
             print("=========");
+            print("=========");
+            print("=========");
 
 
             // connects losted
             //while (edges.Count < trees.Count)
             print("Edges: " + edges.Count);
             List<Edge> connected = new List<Edge>(edges);
-            for (int i = 0; i < trees.Count/2; i++)
+            for (int i = 0; i < trees.Count; i++)
                 DoConnection(trees[i].treeID, connected);
+            print("Edges: " + edges.Count);
 
             // do cuts
             /*if (k < 2)
@@ -255,7 +258,7 @@ namespace ShortestOpenPath_Algorithm
 
         private void RemoveCycle(Edge current)
         {
-            //print("************ Current **************\t" + current);
+            print("************ Current **************\t" + current);
             List<Edge> visited = new List<Edge> { current };
             List<Edge> neighbours = GetNeighbours(current.indexes[0], visited);
             neighbours.Remove(current);
@@ -263,17 +266,17 @@ namespace ShortestOpenPath_Algorithm
             // if no neighbours - return
             if (neighbours.Count == 0)
             {
-                //print("************ Finished **************[0]\t" + current);
+                print("************ Finished **************[0]\t" + current);
                 return;
             }
 
-            /*print("RemoveCycle::neighbours count: " + neighbours.Count);
+            print("RemoveCycle::neighbours count: " + neighbours.Count);
             foreach (var item in neighbours)
-                print(item);*/
+                print(item);
 
             foreach (var item in neighbours)
                 DoEdgeTransition(current.indexes[0], item, visited);
-            //print("************ Finished **************\t" + current);
+            print("************ Finished **************\t" + current);
         }
 
         private void DoEdgeTransition(int rootId, Edge current, List<Edge> visited)
@@ -282,27 +285,27 @@ namespace ShortestOpenPath_Algorithm
                 return;
 
             visited.Add(current);
-            /*print("Visited::count: " + visited.Count);
+            print("Visited::count: " + visited.Count);
             foreach (var item in visited)
-                print(item);*/
+                print(item);
 
             // detect the other side of edge for seaching next heighbours
             int nextRoot = current.indexes[0] == rootId ? current.indexes[1] : current.indexes[0];
-            //print("Next root: " + nextRoot);
+            print("Next root: " + nextRoot);
             List<Edge> neighbours = GetNeighbours(nextRoot, visited);
             neighbours.Remove(current);
 
             // if no neighbours - return
             if (neighbours.Count == 0)
             {
-                //print("No other neighbours for tree #" + nextRoot);
+                print("No other neighbours for tree #" + nextRoot);
                 visited.Remove(current);
                 return;
             }
 
-            /*print("DoEdgeTransition::Neighbours count: " + neighbours.Count);
+            print("DoEdgeTransition::Neighbours count: " + neighbours.Count);
             foreach (var item in neighbours)
-                print(item);*/
+                print(item);
 
             foreach (var item in neighbours)
             {
@@ -312,12 +315,12 @@ namespace ShortestOpenPath_Algorithm
                 if (!visited.Contains(item))
                     continue;
 
-                //print("Cycle found:: " + item);
+                print("Cycle found:: " + item);
                 isCycle = true;
-                /*string edges = "";
+                string edges = "";
                 foreach (var itemEdge in visited)
                     edges += " | " + itemEdge;
-                print(edges);*/
+                print(edges);
 
                 // removing the longest edge in cycle
                 // and finish search
