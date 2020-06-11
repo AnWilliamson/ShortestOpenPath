@@ -5,6 +5,7 @@ using System.ComponentModel.Design;
 using System.IO;
 using UnityEditor.iOS.Xcode;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace ShortestOpenPath_Algorithm
 {
@@ -60,6 +61,10 @@ namespace ShortestOpenPath_Algorithm
         private List<Edge> builtEdges;
         [SerializeField]
         private List<Edge> projectedEdges;
+        [SerializeField]
+        private Text pointCountText;
+        [SerializeField]
+        private string fileName = "testing_1";
 
         // How much klusters we will\n get after K-1 cuts (min: 2)
         [Header("Clusters: ")]
@@ -77,7 +82,8 @@ namespace ShortestOpenPath_Algorithm
         public void CalculationScenario()
         {
             // read file and save data as separate items
-            trees = ReadCsv_(Path.Combine(Application.dataPath, "testing_1.csv"), true, 1);
+            trees = ReadCsv_(Path.Combine(Application.dataPath, "Data/"+ fileName + ".csv"), true, 1);
+            pointCountText.text = "K: " + trees.Count;
             // spawn trees in 3d space with 2D coordinates
             SpawnTrees(trees);
 
